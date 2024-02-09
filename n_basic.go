@@ -14,15 +14,15 @@ var DefaultRequestTimeout = 10 * time.Millisecond
 
 // Basic provides fundamental NATS messaging capabilities for publishing, requesting, and subscribing.
 type Basic struct {
-	natsConn *nats.Conn
-	logger   *slog.Logger
+	nconn  *nats.Conn
+	logger *slog.Logger
 }
 
 // NewBasic creates a new Basic instance with the given NATS connection.
 func NewBasic(natsConn *nats.Conn) *Basic {
 	return &Basic{
-		natsConn: natsConn,
-		logger:   defaultLogger,
+		nconn:  natsConn,
+		logger: defaultLogger,
 	}
 }
 
@@ -34,7 +34,7 @@ func (b *Basic) WithLogger(logger *slog.Logger) *Basic {
 
 // NConn exposes the underlying NATS connection for direct access when needed.
 func (b *Basic) NConn() *nats.Conn {
-	return b.natsConn
+	return b.nconn
 }
 
 // Publish sends a message to the specified subject with the given data.
@@ -51,7 +51,7 @@ func (b *Basic) Publish(ctx context.Context, subject string, data any) error {
 	}
 
 	// Publish the message using the NATS connection:
-	err = b.natsConn.Publish(subject, dataByte)
+	err = b.nconn.Publish(subject, dataByte)
 	if err != nil {
 		return handleError("publish", err, b.logger)
 	}
@@ -72,7 +72,7 @@ func (b *Basic) Request(ctx context.Context, subj string, requestData any, respo
 	}
 
 	// Send the request and wait for a response:
-	msg, err := b.natsConn.Request(subj, dataByte, DefaultRequestTimeout)
+	msg, err := b.nconn.Request(subj, dataByte, DefaultRequestTimeout)
 	if err != nil {
 		return handleError("request", err, b.logger)
 	}
@@ -93,13 +93,13 @@ func (b *Basic) Subscribe(subject string, handler func(msg *nats.Msg)) {
 	}
 
 	// Establish the subscription:
-	_, err := b.natsConn.Subscribe(subject, handler)
+	_, err := b.nconn.Subscribe(subject, handler)
 	handleError("subscribe", err, b.logger)
 }
 
 // checkConnections verifies the existence of necessary connections and logger.
 func (b *Basic) checkConnections() error {
-	if b.natsConn == nil {
+	if b.nconn == nil {
 		return ErrNilNatsConnObject
 	}
 
